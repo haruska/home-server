@@ -23,3 +23,14 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
+  synapse:
+    image: docker.io/matrixdotorg/synapse:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - SYNAPSE_CONFIG_PATH=/config/homeserver.yaml
+    volumes:
+      - ${SYNAPSE_DATA_DIR}:/data
+      - ./config:/config
