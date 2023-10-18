@@ -42,3 +42,12 @@ services:
       - GID=1000
     volumes:
       - ${SYNAPSE_DATA_DIR}:/data
+
+  heisenbridge:
+    image: docker.io/hif1/heisenbridge:latest
+    entrypoint: /heisenbridge-init.sh
+    depends_on:
+      - synapse
+    volumes:
+      - ${SYNAPSE_DATA_DIR}:/data
+      - ./heisenbridge-init.sh:/heisenbridge-init.sh:ro
