@@ -1,0 +1,53 @@
+version: "3"
+services:
+
+  tunnel:
+    image: cloudflare/cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    shm_size: 256mb
+    volumes:
+      - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding='UTF8' --lc-collate='C' --lc-ctype='C'
+
+  synapse:
+    image: docker.io/matrixdotorg/synapse:latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:8008/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - SYNAPSE_SERVER_NAME=${SERVER_NAME}
+      - UID=1000
+      - GID=1000
+    volumes:
+      - ${SYNAPSE_DATA_DIR}:/data
+
+  heisenbridge:
+    image: docker.io/hif1/heisenbridge:latest
+    entrypoint: /heisenbridge-init.sh
+    depends_on:
+      - synapse
+    volumes:
+      - ${SYNAPSE_DATA_DIR}:/data
+      - ./heisenbridge-init.sh:/heisenbridge-init.sh:ro
