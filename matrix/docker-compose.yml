@@ -18,6 +18,8 @@ services:
       timeout: 5s
       retries: 5
     shm_size: 256mb
+    ports:
+      - "127.0.0.1:15432:5432"
     volumes:
       - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/data
     environment:
@@ -37,6 +39,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:18008:8008"
     environment:
       - SYNAPSE_SERVER_NAME=${SERVER_NAME}
       - UID=1000
@@ -46,9 +50,19 @@ services:
 
   heisenbridge:
     image: docker.io/hif1/heisenbridge:latest
+    restart: unless-stopped
     entrypoint: /heisenbridge-init.sh
     depends_on:
       - synapse
     volumes:
       - ${SYNAPSE_DATA_DIR}:/data
       - ./heisenbridge-init.sh:/heisenbridge-init.sh:ro
+
+# discord:
+#   image: dock.mau.dev/mautrix/discord:latest
+#   restart: unless-stopped
+#   depends_on:
+#     - synapse
+#   volumes:
+#     - ${DISCORD_DATA_DIR}:/data
+
